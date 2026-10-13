@@ -1,0 +1,37 @@
+caches:
+  - name: target_gocache
+    cache_key:
+      - a2086-agent-go-target-build
+      - { agent: os }
+      - { agent: arch }
+      - { env: TARGET_GOOS }
+      - { env: TARGET_GOARCH }
+      - { env: TARGET_GOARM }
+      - { env: TARGET_BUILD_MODE }
+      - { env: TARGET_GO_VERSION }
+      - { checksum: go.mod }
+      - { checksum: go.sum }
+      - { env: CACHE_BENCHMARK_REVISION }
+    target_paths:
+      - ~/.gocache-target
+
+  - name: gomodcache
+    cache_key:
+      - a2086-agent-go-modules
+      - { env: TARGET_GO_VERSION }
+      - { checksum: go.mod }
+      - { checksum: go.sum }
+    target_paths:
+      - ~/.gomodcache
+
+  - name: acknowledgements
+    cache_key:
+      - a2086-agent-acknowledgements
+      - { env: TARGET_GOOS }
+      - { env: TARGET_GOARCH }
+      - { env: TARGET_GO_VERSION }
+      - { checksum: .buildkite/go-licenses-version }
+      - { checksum: go.mod }
+      - { checksum: go.sum }
+    target_paths:
+      - ~/.agent-cache-benchmark

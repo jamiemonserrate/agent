@@ -1,0 +1,10 @@
+steps:
+  - label: ":linux: Build Linux AMD64 with Buildkite Cache"
+    key: binary-build
+    command: bash .buildkite/steps/cache-benchmark.sh buildkite-cache
+    agents:
+      queue: agent-cache-benchmark
+    concurrency: 1
+    concurrency_group: "cache-benchmark/${BUILDKITE_PIPELINE_SLUG}"
+    timeout_in_minutes: 20
+    artifact_paths: "cache-benchmark-results/*"
