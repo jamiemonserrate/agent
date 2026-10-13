@@ -32,7 +32,8 @@ timed() {
 # from the build container. Image preparation is outside the cache timings.
 image=agent-cache-benchmark:go1.26.5
 echo '--- Prepare the pinned Go build image'
-timed image-preparation docker build --tag "$image" --file .buildkite/Dockerfile-compile .buildkite
+timed image-preparation docker build --load --progress=plain \
+  --tag "$image" --file .buildkite/Dockerfile-compile .buildkite
 actual_go_version="$(docker run --rm "$image" go env GOVERSION)"
 [[ "$actual_go_version" == "$TARGET_GO_VERSION" ]]
 

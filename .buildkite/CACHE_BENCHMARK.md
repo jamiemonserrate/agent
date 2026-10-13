@@ -22,14 +22,16 @@ checksum network lookups disabled. A volume miss fails verification; rerun a
 normal build to seed the host that received it, then verify again.
 
 ```sh
-bk build create -p jamie-test/agent-cache-volumes -b codex/cache-benchmark -c HEAD
-bk build create -p jamie-test/agent-buildkite-cache -b codex/cache-benchmark -c HEAD
+bk build create -y -i -p jamie-test/agent-cache-volumes -b codex/cache-benchmark -c HEAD
+bk build create -y -i -p jamie-test/agent-buildkite-cache -b codex/cache-benchmark -c HEAD
 
-bk build create -p jamie-test/agent-cache-volumes -b codex/cache-benchmark -c HEAD \
+bk build create -y -i -p jamie-test/agent-cache-volumes -b codex/cache-benchmark -c HEAD \
   -e CACHE_BENCHMARK_REQUIRE_HIT=true
-bk build create -p jamie-test/agent-buildkite-cache -b codex/cache-benchmark -c HEAD \
+bk build create -y -i -p jamie-test/agent-buildkite-cache -b codex/cache-benchmark -c HEAD \
   -e CACHE_BENCHMARK_REQUIRE_HIT=true
 ```
+
+`-i` explicitly triggers a build even though automatic branch builds are disabled.
 
 Cache volumes and target archive keys include the commit so a changed experiment
 starts with a fresh target cache. The `a2086` archive key prefixes keep entries
