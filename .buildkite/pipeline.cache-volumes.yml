@@ -1,15 +1,15 @@
 steps:
-  - label: ":package: PyTorch wheels with a cache volume"
-    key: pytorch-download
-    command: bash .buildkite/steps/pytorch-cache-benchmark.sh volumes
+  - label: ":nodejs: Backstage dependencies with a cache volume"
+    key: backstage-dependencies
+    command: bash .buildkite/steps/backstage-cache-benchmark.sh volumes
     agents:
       queue: agent-cache-benchmark
     concurrency: 1
     concurrency_group: "cache-benchmark/${BUILDKITE_PIPELINE_SLUG}"
     timeout_in_minutes: 20
     cache:
-      name: "pytorch-wheels-${BUILDKITE_COMMIT}"
+      name: "backstage-node-modules-${BUILDKITE_COMMIT}"
       size: 20g
       paths:
-        - "$HOME/.pytorch-wheels"
+        - "$HOME/.backstage-node-modules"
     artifact_paths: "cache-benchmark-results/*"

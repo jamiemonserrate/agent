@@ -1,0 +1,11 @@
+caches:
+  - name: backstage_node_modules
+    cache_key:
+      - a2086-backstage-node-modules
+      - { agent: os }
+      - { agent: arch }
+      - { env: BACKSTAGE_REVISION }
+      - { env: BACKSTAGE_NODE_IMAGE }
+      - { env: CACHE_BENCHMARK_REVISION }
+    target_paths:
+      - ~/.backstage-node-modules
