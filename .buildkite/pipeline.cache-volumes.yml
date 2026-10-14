@@ -1,17 +1,15 @@
 steps:
-  - label: ":linux: Build Linux AMD64 with a cache volume"
-    key: binary-build
-    command: bash .buildkite/steps/cache-benchmark.sh volumes
+  - label: ":package: PyTorch wheels with a cache volume"
+    key: pytorch-download
+    command: bash .buildkite/steps/pytorch-cache-benchmark.sh volumes
     agents:
       queue: agent-cache-benchmark
     concurrency: 1
     concurrency_group: "cache-benchmark/${BUILDKITE_PIPELINE_SLUG}"
     timeout_in_minutes: 20
     cache:
-      name: "agent-linux-amd64-${BUILDKITE_COMMIT}"
+      name: "pytorch-wheels-${BUILDKITE_COMMIT}"
       size: 20g
       paths:
-        - "$HOME/.gocache-target"
-        - "$HOME/.gomodcache"
-        - "$HOME/.agent-cache-benchmark"
+        - "$HOME/.pytorch-wheels"
     artifact_paths: "cache-benchmark-results/*"

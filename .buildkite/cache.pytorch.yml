@@ -1,0 +1,11 @@
+caches:
+  - name: pytorch_wheels
+    cache_key:
+      - a2086-pytorch-rocm64-wheels
+      - { agent: os }
+      - { agent: arch }
+      - { env: PYTORCH_PYTHON_IMAGE }
+      - { checksum: .buildkite/requirements.pytorch.txt }
+      - { env: CACHE_BENCHMARK_REVISION }
+    target_paths:
+      - ~/.pytorch-wheels

@@ -1,7 +1,7 @@
 steps:
-  - label: ":linux: Build Linux AMD64 with Buildkite Cache"
-    key: binary-build
-    command: bash .buildkite/steps/cache-benchmark.sh buildkite-cache
+  - label: ":package: PyTorch wheels with Buildkite Cache"
+    key: pytorch-download
+    command: bash .buildkite/steps/pytorch-cache-benchmark.sh buildkite-cache
     agents:
       queue: agent-cache-benchmark
     concurrency: 1
