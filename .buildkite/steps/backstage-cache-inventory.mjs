@@ -33,7 +33,7 @@ function inventory(root) {
   return entries;
 }
 
-function record(mode, root, output) {
+function record(mode, root, output, scope = 'Backstage root node_modules; benchmark manifest and seed marker excluded') {
   assert(['seed', 'verify'].includes(mode), 'Specify seed or verify');
   const entries = inventory(root);
   const data = Buffer.from(entries.map(entry => JSON.stringify(entry)).join('\n') + '\n');
@@ -49,7 +49,7 @@ function record(mode, root, output) {
   const quantile = fraction => sizes[Math.ceil(sizes.length * fraction) - 1];
   const bounds = [4096, 65536, 1048576, Infinity];
   const profile = {
-    scope: 'Backstage root node_modules; benchmark manifest and seed marker excluded',
+    scope,
     regular_file_count: files.length,
     directory_count: entries.filter(entry => entry.type === 'directory').length,
     symlink_count: entries.filter(entry => entry.type === 'symlink').length,
@@ -93,12 +93,23 @@ if (process.argv[2] === '--self-check') {
     fs.unlinkSync(path.join(root, 'link'));
     fs.symlinkSync('nested/b.json', path.join(root, 'link'));
     assert.throws(() => record('verify', root, output), /differs from the seed/);
-    console.log('Inventory self-check passed, including changed-file and changed-symlink detection.');
+    fs.unlinkSync(path.join(root, 'link'));
+    fs.symlinkSync('a.js', path.join(root, 'link'));
+    const directoryMode = fs.statSync(path.join(root, 'nested')).mode & 0o777;
+    fs.chmodSync(path.join(root, 'nested'), directoryMode ^ 0o020);
+    assert.throws(() => record('verify', root, output), /differs from the seed/);
+    fs.chmodSync(path.join(root, 'nested'), directoryMode);
+    fs.unlinkSync(path.join(root, 'nested', 'b.json'));
+    assert.throws(() => record('verify', root, output), /differs from the seed/);
+    fs.writeFileSync(path.join(root, 'nested', 'b.json'), '{}');
+    fs.writeFileSync(path.join(root, 'extra.js'), 'extra');
+    assert.throws(() => record('verify', root, output), /differs from the seed/);
+    console.log('Inventory self-check passed: changed contents, symlink targets, directory modes, missing files, and extra files detected.');
   } finally {
     fs.rmSync(temp, { recursive: true, force: true });
   }
 } else {
-  const [mode, root, output] = process.argv.slice(2);
-  assert(root && output, 'Usage: node backstage-cache-inventory.mjs seed|verify ROOT RESULTS');
-  console.log(JSON.stringify(record(mode, root, output)));
+  const [mode, root, output, scope] = process.argv.slice(2);
+  assert(root && output, 'Usage: node backstage-cache-inventory.mjs seed|verify ROOT RESULTS [SCOPE]');
+  console.log(JSON.stringify(record(mode, root, output, scope)));
 }

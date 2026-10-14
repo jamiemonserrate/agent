@@ -21,6 +21,7 @@ caches:
       - { env: TARGET_GO_VERSION }
       - { checksum: go.mod }
       - { checksum: go.sum }
+      - { env: CACHE_BENCHMARK_REVISION }
     target_paths:
       - ~/.gomodcache
 
@@ -33,5 +34,6 @@ caches:
       - { checksum: .buildkite/go-licenses-version }
       - { checksum: go.mod }
       - { checksum: go.sum }
+      - { env: CACHE_BENCHMARK_REVISION }
     target_paths:
       - ~/.agent-cache-benchmark
