@@ -14,7 +14,7 @@ if [[ "$phase" == build ]]; then
     bash -ec '
       # Bootstrap go:embed so go-licenses can load the package. The normal
       # build script replaces this with full generated OSS attributions.
-      gzip -c LICENSE > clicommand/ACKNOWLEDGEMENTS.md.gz
+      gzip -c LICENSE.txt > clicommand/ACKNOWLEDGEMENTS.md.gz
       go test ./internal/cache -run "^TestArchiveTier$" -count=1
       bash scripts/build-binary.sh linux amd64 0
     '
