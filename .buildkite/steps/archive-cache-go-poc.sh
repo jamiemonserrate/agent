@@ -98,6 +98,9 @@ build_agent() {
     reuse=true
     build_env=(--network none --env GOPROXY=off --env GOSUMDB=off)
   fi
+  # Give each build the same output state; otherwise Go can skip linking the
+  # second build because the first build's executable is still present.
+  rm -f pkg/buildkite-agent-linux-amd64
   timed "$label-build" docker run --rm \
     --volume "$PWD:/work" --workdir /work \
     --volume "$GOCACHE:/root/.gocache-target" \
