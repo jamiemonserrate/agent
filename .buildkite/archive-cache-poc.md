@@ -58,6 +58,69 @@ Logs, timings, mount details, SHA-256 verification output, and volume inventorie
 are uploaded under `archive-cache-poc-results/`. A successful first restore is
 not proof of a cross-job volume hit; read `cross_job_volume_hit` in `context.txt`.
 
+For example, run the full experiment, then reuse its key:
+
+```bash
+BUILDKITE_ORGANIZATION_SLUG=jamie-test bk build create \
+  -p agent-tiered-cache-poc -b codex/a-2086-cached-archives-poc -y
+
+BUILDKITE_ORGANIZATION_SLUG=jamie-test bk build create \
+  -p agent-tiered-cache-poc -b codex/a-2086-cached-archives-poc \
+  -e ARCHIVE_POC_REUSE_KEY=01a13d30-0c57-4a68-bf13-d13b1aa2af21 -y
+```
+
+The example reuse key is from the runs below and will expire under the normal
+registry lifecycle. Use a fresh completed run's key for later experiments.
+
+## Results: 15 October 2026
+
+[Build #2](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2)
+passed the complete experiment at `a83e059e82171e0feaea5a8e4693ba2047bd74bb`.
+Remote seeding, empty-volume fallback, corrupted-local-archive repair, registry
+misses, blocked remote downloads, skipped saves, and forced replacement all
+passed. The original archive was 268,999,555 bytes; the forced replacement was
+268,999,545 bytes. Initial save took 3.054 s; forced replacement took 2.299 s.
+
+[Build #4](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/4)
+passed the warm-only pipeline at `3775aa8a4a274fb8db0033ee4f2c821546e4c763`.
+[Build #3](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/3)
+also passed after retrying its verification job once its binary was available.
+Both of its comparison jobs received an already-populated volume on their first
+restore, confirming that successful earlier jobs had persisted reusable archives.
+These first volume restores took 2.307 s and 1.480 s and selected the forced
+digest `a770f3c3110eb4804df7f0aab0328f57e405544b3618e621638fb88dcc2e2cf9`.
+
+Each of the eight comparisons restored its selected approximately 269 MB archive
+through both paths. The local measurement explicitly blocked remote archive
+downloads; registry requests and retention refreshes remained enabled.
+
+| Build / comparison | First restore used existing volume | Remote baseline (s) | Warm local archive (s) |
+| --- | --- | ---: | ---: |
+| [#2 exercise](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2#01a13d30-30a9-49ed-8e65-9d5cecf5aabf) | No | 2.202 | 1.182 |
+| [#2 verify skipped save](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2#01a13d30-30af-4b2a-b4a9-80dee631f059) | No | 2.258 | 1.356 |
+| [#2 verify force](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2#01a13d30-30b7-4893-aa03-d378263e1239) | No | 2.743 | 1.290 |
+| [#2 repeat](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2#01a13d30-30bb-4661-ab3f-713485532fdc) | No | 2.519 | 1.092 |
+| [#4 verify force](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/4#01a13d37-107a-40fb-9b4e-8749ab490ee2) | No | 2.364 | 1.045 |
+| [#4 repeat](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/4#01a13d37-107c-401e-b367-e89dc6fb85b8) | No | 2.349 | 1.049 |
+| [#3 retried verification](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/3#01a13d39-9f21-44b9-8e31-7cd2ef204e8b) | Yes | 4.089 | 0.895 |
+| [#3 repeat](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/3#01a13d34-8b60-4a14-a142-4a10ee977dfd) | Yes | 2.440 | 1.057 |
+| **Median** | | **2.402** | **1.075** |
+
+These are whole cache-restore command timings, including registry resolution,
+transfer or local copy, digest verification, cleanup, extraction, and retention
+work. The separate full-file integrity checks are outside the timed commands.
+Each job ran its remote baseline before its warm local measurement. The two
+first restores from existing volume snapshots are distinct from those later
+warm measurements. The six cold first restores, which also populated the volume,
+had a median of 2.979 s. This small, ordered, retry-inclusive sample is not a
+general speedup or volume-availability estimate.
+
+Setup failures are retained in Buildkite: build #1 referenced `LICENSE` instead
+of `LICENSE.txt`; build #3 initially let verification start before compilation
+because its mutation dependencies were skipped. The filename and direct binary
+dependency are fixed in the branch, and the corrected warm pipeline passed in
+build #4. No cache scenario failed in the complete build #2 run.
+
 ## Scope
 
 This is for trusted test jobs only. The mounted directory is directly readable
