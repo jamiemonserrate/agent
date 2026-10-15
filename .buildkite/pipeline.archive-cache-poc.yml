@@ -52,7 +52,9 @@ steps:
 
   - label: ":mag: Verify forced version across jobs"
     key: poc-verify-force
-    depends_on: poc-force
+    depends_on:
+      - poc-binary
+      - poc-force
     command: bash .buildkite/steps/archive-cache-poc.sh verify-force
     timeout_in_minutes: 10
     cache: *archive-volume
