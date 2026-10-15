@@ -75,6 +75,50 @@ was already populated. The first-restore logs report actual cross-job reuse.
 Results are under `archive-cache-poc-results/go-*`; sizes are measured from the
 real caches rather than selected in advance.
 
+## Real Go results: 15 October 2026
+
+[Build #6](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/6)
+passed at `b227b6e070df222ba04ed128f1d660af94bb3d47` using the real workload.
+The seed produced these payloads; file counts and bytes exclude the verifier's
+manifest and seed marker, while the archives include them.
+
+| Entry | Regular files | Regular-file bytes | Archive bytes |
+| --- | ---: | ---: | ---: |
+| Go build cache | 5,599 | 846,984,453 | 168,365,152 |
+| Go module cache | 27,284 | 985,819,902 | 364,634,409 |
+| Acknowledgements | 1 | 26,055 | 22,263 |
+| **Total** | **32,884** | **1,832,830,410** | **533,021,824** |
+
+The seed build took 57.736 s; saving all three entries took 5.105 s. All four
+offline verification builds succeeded with networking disabled and the output
+executable removed before each invocation. All 18 restored inventories matched
+the seed, including every regular file's content, directory modes, and symlinks.
+Both final ordinary saves skipped all three existing entries, as intended.
+
+| Job | First restore: volume hits / entries | First restore (s) | Remote baseline (s) | Controlled warm volume (s) | Offline build after remote / volume (s) |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| [Compare](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/6#01a13e18-7999-408e-b4fb-b1232c3861cb) | 0 / 3 | 3.673 | 3.578 | 2.178 | 1.880 / 1.697 |
+| [Repeat](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/6#01a13e18-799d-411b-a408-e7d1c51774ba) | 3 / 3 | 2.082 | 3.836 | 3.087 | 2.546 / 2.130 |
+
+The compare job received an older snapshot containing build #5's archives;
+it downloaded the current digests and retained them locally. The repeat job
+then found all three current archives in its attached snapshot, proving
+cross-job reuse after successful completion. Controlled warm restores blocked
+remote archive downloads explicitly. These whole restore-command timings include
+registry work, local copy or remote download, digest verification, cleanup,
+extraction, and retention refresh; full-file inventory scans are separate.
+
+Remote runs precede local runs within each job, so filesystem and Docker state
+are warmer for the second build. This small sample demonstrates the paths and
+records timings; it does not establish a general performance improvement.
+
+[Build #5](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/5)
+also passed the real-cache integrity and offline checks. Its second build could
+reuse the first executable, so build #6 corrected the output state before each
+build. The results above use only that corrected run. The build #6 seed and
+compare inventories also show the older build #5 digests remaining on the volume:
+the POC deliberately has no archive eviction.
+
 ## Synthetic correctness experiment
 
 Each build uses its build UUID in the cache key to avoid older experiment entries.
