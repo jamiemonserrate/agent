@@ -35,6 +35,14 @@ Each build uses its build UUID in the cache key to avoid older experiment entrie
 The seed contains 256 MiB of random data, 2,048 small files, an executable, an
 empty directory, and a symlink. `ARCHIVE_POC_MIB` can select 1–1,024 MiB.
 
+To repeat warm measurements without reseeding, set `ARCHIVE_POC_REUSE_KEY` to
+the cache key from a completed run's `context.txt`. This skips seeding and
+mutation scenarios and runs only the binary build and final two comparisons.
+Use a completed run that reached the forced version; ordinary runs still use
+fresh keys. Reuse runs provide additional opportunities to observe a volume
+snapshot being reused across jobs and builds, without assuming an attachment
+or replication-time guarantee.
+
 The jobs verify:
 
 - Remote seeding plus local retention, followed by volume snapshots on success.

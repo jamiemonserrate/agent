@@ -31,7 +31,7 @@ esac
 buildkite-agent artifact download 'archive-cache-poc-bin/buildkite-agent' . --step poc-binary
 binary="$PWD/archive-cache-poc-bin/buildkite-agent"
 chmod +x "$binary"
-export ARCHIVE_POC_KEY="${ARCHIVE_POC_KEY:-$BUILDKITE_BUILD_ID}"
+export ARCHIVE_POC_KEY="${ARCHIVE_POC_REUSE_KEY:-${ARCHIVE_POC_KEY:-$BUILDKITE_BUILD_ID}}"
 export BUILDKITE_AGENT_CACHE_ARCHIVE_PATH="$HOME/.buildkite-archive-poc"
 archive_path="$BUILDKITE_AGENT_CACHE_ARCHIVE_PATH"
 data=archive-cache-poc-data
@@ -41,7 +41,7 @@ printf 'operation,milliseconds\n' > "$results/timings.csv"
 printf 'phase=%s\nbuild=%s\njob=%s\ncommit=%s\nkey=%s\narchive_path=%s\n' \
   "$phase" "$BUILDKITE_BUILD_URL" "$BUILDKITE_JOB_ID" "$BUILDKITE_COMMIT" \
   "$ARCHIVE_POC_KEY" "$archive_path" > "$results/context.txt"
-find "$archive_path" -maxdepth 1 -type f -printf '%f %s\n' > "$results/volume-before.txt"
+find -H "$archive_path" -maxdepth 1 -type f -printf '%f %s\n' > "$results/volume-before.txt"
 findmnt -T "$archive_path" > "$results/mount.txt"
 
 cache() {

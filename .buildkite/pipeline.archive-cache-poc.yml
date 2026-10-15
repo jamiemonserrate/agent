@@ -12,6 +12,7 @@ steps:
 
   - label: ":seedling: Seed remote archive and volume"
     key: poc-seed
+    if: build.env("ARCHIVE_POC_REUSE_KEY") == null
     depends_on: poc-binary
     command: bash .buildkite/steps/archive-cache-poc.sh seed
     timeout_in_minutes: 10
@@ -24,6 +25,7 @@ steps:
 
   - label: ":test_tube: Fallback, local hits, corruption and skipped save"
     key: poc-exercise
+    if: build.env("ARCHIVE_POC_REUSE_KEY") == null
     depends_on: poc-seed
     command: bash .buildkite/steps/archive-cache-poc.sh exercise
     timeout_in_minutes: 10
@@ -32,6 +34,7 @@ steps:
 
   - label: ":mag: Verify skipped save preserved original"
     key: poc-verify-skip
+    if: build.env("ARCHIVE_POC_REUSE_KEY") == null
     depends_on: poc-exercise
     command: bash .buildkite/steps/archive-cache-poc.sh verify-skip
     timeout_in_minutes: 10
@@ -40,6 +43,7 @@ steps:
 
   - label: ":package: Force replacement in both tiers"
     key: poc-force
+    if: build.env("ARCHIVE_POC_REUSE_KEY") == null
     depends_on: poc-verify-skip
     command: bash .buildkite/steps/archive-cache-poc.sh force
     timeout_in_minutes: 10
