@@ -56,6 +56,9 @@ func restoreReport(cacheID string, result RestoreResult, err error) string {
 			match = "fallback"
 		}
 		fmt.Fprintf(&report, "Cache restored using %s key %s from %s", match, logValue(result.Key), displayScopes(result.Scopes, "unscoped"))
+		if result.ArchiveCacheHit {
+			report.WriteString(" (archive from volume)")
+		}
 	case result.NotRestoredReason != "":
 		report.WriteString(logValue(result.NotRestoredReason))
 	case incomplete:

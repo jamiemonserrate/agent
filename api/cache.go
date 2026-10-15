@@ -204,7 +204,7 @@ type CacheEntryCommitReq struct {
 // and confirm (restore). The server only logs it:
 // it never rejects a request over its stats.
 type CacheStats struct {
-	// Backend is the blob store the agent transferred with: "s3", "nsc" or "file".
+	// Backend is the transfer source: "s3", "nsc", "file", or the experimental "volume" tier.
 	Backend    string `json:"backend,omitempty"`
 	TotalMs    int64  `json:"total_ms"`
 	ArchiveMs  int64  `json:"archive_ms"`

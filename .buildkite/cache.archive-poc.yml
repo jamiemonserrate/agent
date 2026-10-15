@@ -1,0 +1,9 @@
+caches:
+  - name: archive_poc
+    cache_key:
+      - a2086-cached-archives-v1
+      - { agent: os }
+      - { agent: arch }
+      - { env: ARCHIVE_POC_KEY }
+    target_paths:
+      - archive-cache-poc-data

@@ -19,6 +19,9 @@ type Config struct {
 	Registry string
 	// BucketURL is the URL of the bucket (e.g., s3://bucket-name)
 	BucketURL string
+	// ArchivePath enables the experimental local archive tier. The caller must
+	// attach this directory to a cache volume shared only by trusted jobs.
+	ArchivePath string
 	// CacheConfigFile is the path to the cache configuration YAML file
 	CacheConfigFile string
 	// Names is a list of cache names (if empty, processes all caches)

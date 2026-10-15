@@ -19,6 +19,9 @@ packaging/docker/*/hooks/
 
 # Generated at build time by scripts/generate-acknowledgements.sh
 /clicommand/ACKNOWLEDGEMENTS.md.gz
+/archive-cache-poc-bin/
+/archive-cache-poc-data/
+/archive-cache-poc-results/
 
 # So we can have a nice local config file in development
 .buildkite-agent.cfg

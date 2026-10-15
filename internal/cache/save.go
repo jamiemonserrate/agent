@@ -362,6 +362,7 @@ func (c *client) Save(ctx context.Context, cacheID string) (SaveResult, error) {
 	}
 
 	result.CacheEntryCreated = true
+	c.retainArchive(ctx, archiveInfo.ArchivePath, api.CacheDigest{Algorithm: "sha256", Value: archiveInfo.Sha256sum})
 	result.TotalDuration = time.Since(startTime)
 
 	// Add final result attributes to span

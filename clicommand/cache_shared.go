@@ -18,10 +18,16 @@ type CacheConfig struct {
 	CacheConfigFile string   `cli:"cache-config-file"`
 	Concurrency     int      `cli:"concurrency"`
 	FailOnError     bool     `cli:"cache-fail-on-error"`
+	ArchivePath     string   `cli:"cache-archive-path"`
 }
 
 func cacheFlags() []cli.Flag {
 	return []cli.Flag{
+		&cli.StringFlag{
+			Name:    "cache-archive-path",
+			Usage:   "Experimental local archive tier on a manually attached cache volume (trusted jobs only)",
+			Sources: cli.EnvVars("BUILDKITE_AGENT_CACHE_ARCHIVE_PATH"),
+		},
 		&cli.StringSliceFlag{
 			Name:    "name",
 			Value:   []string{},

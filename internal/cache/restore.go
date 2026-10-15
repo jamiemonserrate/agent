@@ -255,6 +255,7 @@ func (c *client) Restore(ctx context.Context, cacheID string) (RestoreResult, er
 	}()
 
 	// Populate transfer metrics
+	result.ArchiveCacheHit = transferInfo.ArchiveCacheHit
 	result.Transfer = TransferMetrics{
 		BytesTransferred: transferInfo.BytesTransferred,
 		TransferSpeed:    transferInfo.TransferSpeed,
@@ -389,6 +390,9 @@ func (c *client) Restore(ctx context.Context, cacheID string) (RestoreResult, er
 		EntryCount:        archiveInfo.WrittenEntries,
 		PartCount:         transferInfo.PartCount,
 		Concurrency:       transferInfo.Concurrency,
+	}
+	if result.ArchiveCacheHit {
+		stats.Backend = "volume"
 	}
 	confirmed := c.confirmRestoreSucceeded(ctx, retrieveResp, stats)
 	result.TotalDuration = time.Since(startTime)
@@ -580,8 +584,16 @@ func (c *client) downloadCache(ctx context.Context, retrieveResp api.CacheEntryR
 	// for concurrent restores and keeps API-supplied paths out of the destination.
 	archiveFile = filepath.Join(tmpDir, "archive")
 
-	// Download archive
-	transferInfo, err = blobStore.Download(ctx, storeObjectName, archiveFile)
+	// The registry has already resolved and authorized this exact blob. A
+	// volume miss changes only where its bytes come from, never key selection.
+	var localHit bool
+	transferInfo, localHit = c.readCachedArchive(ctx, retrieveResp.Blobs[0].Digest, archiveFile)
+	if !localHit {
+		if c.archivePath != "" {
+			slog.Info("Archive tier: remote download", "digest", storeObjectName)
+		}
+		transferInfo, err = blobStore.Download(ctx, storeObjectName, archiveFile)
+	}
 	if err != nil {
 		// Clean up temporary directory on failure
 		_ = os.RemoveAll(tmpDir)
@@ -598,7 +610,10 @@ func (c *client) downloadCache(ctx context.Context, retrieveResp api.CacheEntryR
 
 	// Verify the download matches its content-addressed name before returning it
 	// to the caller, so a bad blob never reaches the target folders.
-	if err := verifyBlobDigest(ctx, archiveFile, retrieveResp.Blobs[0].Digest); err != nil {
+	if !localHit {
+		err = verifyBlobDigest(ctx, archiveFile, retrieveResp.Blobs[0].Digest)
+	}
+	if err != nil {
 		_ = os.RemoveAll(tmpDir)
 		span.RecordError(err)
 		if errors.Is(err, ErrDigestMismatch) {
@@ -609,6 +624,9 @@ func (c *client) downloadCache(ctx context.Context, retrieveResp api.CacheEntryR
 	}
 
 	// Extend the blob's retention now that it's confirmed good.
+	if !localHit {
+		c.retainArchive(ctx, archiveFile, retrieveResp.Blobs[0].Digest)
+	}
 	maybeRefreshRetention(ctx, blobStore, retrieveResp.Fallback, storeObjectName, time.Duration(retrieveResp.RetentionDays)*24*time.Hour)
 
 	span.SetStatus(codes.Ok, "download completed")

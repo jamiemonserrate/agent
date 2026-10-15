@@ -52,14 +52,15 @@ var (
 // bucket and the expanded, validated cache definitions used by every call.
 // Safe for concurrent use; honours context cancellation.
 type client struct {
-	api        cacheAPI
-	bucketURL  string
-	format     string
-	platform   string
-	registry   string
-	force      bool
-	caches     []configuration.Cache
-	onProgress ProgressCallback
+	api         cacheAPI
+	bucketURL   string
+	archivePath string
+	format      string
+	platform    string
+	registry    string
+	force       bool
+	caches      []configuration.Cache
+	onProgress  ProgressCallback
 }
 
 // newClient builds a client from apiClient and cfg: loads and expands the
@@ -96,13 +97,14 @@ func newClient(l logger.Logger, apiClient cacheAPI, cfg Config) (*client, []stri
 	}
 
 	c := &client{
-		api:       apiClient,
-		bucketURL: cfg.BucketURL,
-		format:    "zip",
-		platform:  fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
-		registry:  registry,
-		force:     cfg.Force,
-		caches:    expanded,
+		api:         apiClient,
+		bucketURL:   cfg.BucketURL,
+		archivePath: cfg.ArchivePath,
+		format:      "zip",
+		platform:    fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH),
+		registry:    registry,
+		force:       cfg.Force,
+		caches:      expanded,
 		onProgress: func(cacheID, stage, message string, _, _ int) {
 			l.WithFields(
 				logger.StringField("cache_id", cacheID),
@@ -212,6 +214,8 @@ type SaveResult struct {
 
 // RestoreResult contains detailed information about a cache restore operation.
 type RestoreResult struct {
+	// ArchiveCacheHit distinguishes a local archive hit from a remote transfer.
+	ArchiveCacheHit bool
 	// CacheHit indicates whether the exact cache key was found.
 	CacheHit bool
 

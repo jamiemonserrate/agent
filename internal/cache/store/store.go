@@ -13,6 +13,7 @@ const (
 )
 
 type TransferInfo struct {
+	ArchiveCacheHit  bool // Experimental local archive tier served this transfer.
 	BytesTransferred int64
 	TransferSpeed    float64 // in MB/s
 	RequestID        string

@@ -1,0 +1,62 @@
+# Manual-only experiment in jamie-test. Only archives are on the volume;
+# restored targets are ordinary job-private directories.
+agents:
+  queue: agent-cache-benchmark
+
+steps:
+  - label: ":golang: Build cached-archive POC"
+    key: poc-binary
+    command: bash .buildkite/steps/archive-cache-poc.sh build
+    timeout_in_minutes: 15
+    artifact_paths: "archive-cache-poc-bin/*"
+
+  - label: ":seedling: Seed remote archive and volume"
+    key: poc-seed
+    depends_on: poc-binary
+    command: bash .buildkite/steps/archive-cache-poc.sh seed
+    timeout_in_minutes: 10
+    cache: &archive-volume
+      name: a2086-cached-archives-v1
+      size: 20g
+      paths:
+        - "$HOME/.buildkite-archive-poc"
+    artifact_paths: &results "archive-cache-poc-results/**/*"
+
+  - label: ":test_tube: Fallback, local hits, corruption and skipped save"
+    key: poc-exercise
+    depends_on: poc-seed
+    command: bash .buildkite/steps/archive-cache-poc.sh exercise
+    timeout_in_minutes: 10
+    cache: *archive-volume
+    artifact_paths: *results
+
+  - label: ":mag: Verify skipped save preserved original"
+    key: poc-verify-skip
+    depends_on: poc-exercise
+    command: bash .buildkite/steps/archive-cache-poc.sh verify-skip
+    timeout_in_minutes: 10
+    cache: *archive-volume
+    artifact_paths: *results
+
+  - label: ":package: Force replacement in both tiers"
+    key: poc-force
+    depends_on: poc-verify-skip
+    command: bash .buildkite/steps/archive-cache-poc.sh force
+    timeout_in_minutes: 10
+    cache: *archive-volume
+    artifact_paths: *results
+
+  - label: ":mag: Verify forced version across jobs"
+    key: poc-verify-force
+    depends_on: poc-force
+    command: bash .buildkite/steps/archive-cache-poc.sh verify-force
+    timeout_in_minutes: 10
+    cache: *archive-volume
+    artifact_paths: *results
+
+  - label: ":stopwatch: Repeat warm-volume and remote comparison"
+    depends_on: poc-verify-force
+    command: bash .buildkite/steps/archive-cache-poc.sh warm
+    timeout_in_minutes: 10
+    cache: *archive-volume
+    artifact_paths: *results

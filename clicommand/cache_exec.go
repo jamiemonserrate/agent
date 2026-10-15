@@ -99,6 +99,7 @@ var CacheExecCommand = &cli.Command{
 			CacheConfigFile: cacheConfigFile,
 			Names:           cfg.Names,
 			FailOnError:     cfg.FailOnError,
+			ArchivePath:     cfg.ArchivePath,
 			Redact:          cacheExecRedactor(envNeedles),
 		}
 		return cache.RunExec(ctx, l, apiClient, cacheCfg, os.Stdout, os.Stderr, command)
