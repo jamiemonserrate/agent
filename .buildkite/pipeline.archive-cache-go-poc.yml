@@ -1,0 +1,37 @@
+# Manual-only experiment. Expanded Go caches are NOT mounted on the volume.
+agents:
+  queue: agent-cache-benchmark
+
+steps:
+  - label: ":golang: Build cached-archive POC"
+    key: poc-binary
+    command: bash .buildkite/steps/archive-cache-poc.sh build
+    timeout_in_minutes: 15
+    artifact_paths: "archive-cache-poc-bin/*"
+
+  - label: ":seedling: Build agent and save real Go caches"
+    key: go-seed
+    depends_on: poc-binary
+    command: bash .buildkite/steps/archive-cache-go-poc.sh seed
+    timeout_in_minutes: 20
+    cache: &archive-volume
+      name: a2086-cached-go-archives-v1
+      size: 20g
+      paths:
+        - "$HOME/.buildkite-archive-go-poc"
+    artifact_paths: &results "archive-cache-poc-results/**/*"
+
+  - label: ":stopwatch: Compare Go remote and volume restores; build offline"
+    key: go-compare
+    depends_on: go-seed
+    command: bash .buildkite/steps/archive-cache-go-poc.sh compare
+    timeout_in_minutes: 20
+    cache: *archive-volume
+    artifact_paths: *results
+
+  - label: ":repeat: Repeat Go comparison from the next snapshot"
+    depends_on: go-compare
+    command: bash .buildkite/steps/archive-cache-go-poc.sh repeat
+    timeout_in_minutes: 20
+    cache: *archive-volume
+    artifact_paths: *results

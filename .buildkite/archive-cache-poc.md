@@ -5,9 +5,11 @@ commands. `.buildkite/cache.yml` keys, registry policies, fallback ordering,
 target replacement, and save/`--force` semantics remain authoritative.
 
 Run the manual-only [jamie-test pipeline](https://buildkite.com/jamie-test/agent-tiered-cache-poc)
-on `codex/a-2086-cached-archives-poc`. Its initial step uploads
-`pipeline.archive-cache-poc.yml`, builds the experimental agent, and attaches a
-20 GB hosted cache volume explicitly to each workload job.
+on `codex/a-2086-cached-archives-poc`. Its default workload is the real Go agent
+build from `cache-benchmark`, using `pipeline.archive-cache-go-poc.yml`.
+It builds the experimental agent and attaches a 20 GB hosted cache volume
+explicitly to each workload job. Set `ARCHIVE_POC_WORKLOAD=synthetic` to run the
+earlier correctness experiment in `pipeline.archive-cache-poc.yml` instead.
 
 ## Behaviour
 
@@ -29,7 +31,51 @@ on the manually attached volume. With neither set, behaviour is unchanged.
 Exact restores retain the existing registry confirmation and remote-object
 retention refresh; fallback matches retain their existing no-refresh behaviour.
 
-## Experiment
+## Real Go cache workload
+
+The default pipeline uses the same workload, target paths, Go 1.26.5 image,
+Node inventory image, and unchanged exhaustive inventory verifier as
+`codex/cache-benchmark` at `101cf7afc34605fd98b7b56988e7fad92f34719d`.
+There is no generated random payload in this workload.
+
+| Entry | Target | Contents |
+| --- | --- | --- |
+| `target_gocache` | `~/.gocache-target` | Actual Go compilation cache from building this agent |
+| `gomodcache` | `~/.gomodcache` | Downloaded Go modules and their sources |
+| `acknowledgements` | `~/.agent-cache-benchmark` | Generated OSS acknowledgements reused by offline builds |
+
+These use the existing Buildkite Cache format and registry/store. New key
+prefixes and the experiment build UUID isolate the run from previous benchmark
+entries. They rebuild the same kinds of cache, rather than reusing archives
+compiled from the old benchmark source revision.
+
+Only `~/.buildkite-archive-go-poc` is mounted on the volume. It holds one
+digest-addressed compressed archive per entry, including every target in that
+entry. Expanded Go caches are ordinary directories in each job. Restore cleans
+and replaces targets as usual. Repeated saves of an existing key skip; `--force`
+would publish a replacement digest. There is no local archive eviction, so old
+digests can accumulate across new keys and forced replacements.
+
+The seed job builds the Linux AMD64 agent and records every cache file's hash,
+directory mode, and symlink target before saving all three entries as its last
+workload operation. Two later jobs each:
+
+1. Restore with tiering enabled and record how many of the three entries came
+   from an existing volume snapshot. Missing archives fall back to Buildkite Cache.
+2. Restore the same entries with the volume tier disabled, verify their complete
+   inventories, and compile the agent with Docker networking disabled.
+3. Restore again from the now-populated archive tier, with remote archive
+   downloads blocked. Verify the complete inventories and compile offline again.
+4. Finish with ordinary cache save, which preserves the original seed entries.
+
+Restore, full inventory verification, image preparation, and compilation are
+timed separately. This is an ordered paired comparison: remote runs before
+local. Controlled warm restores do not imply that every newly attached volume
+was already populated. The first-restore logs report actual cross-job reuse.
+Results are under `archive-cache-poc-results/go-*`; sizes are measured from the
+real caches rather than selected in advance.
+
+## Synthetic correctness experiment
 
 Each build uses its build UUID in the cache key to avoid older experiment entries.
 The seed contains 256 MiB of random data, 2,048 small files, an executable, an
@@ -62,17 +108,19 @@ For example, run the full experiment, then reuse its key:
 
 ```bash
 BUILDKITE_ORGANIZATION_SLUG=jamie-test bk build create \
-  -p agent-tiered-cache-poc -b codex/a-2086-cached-archives-poc -y
+  -p agent-tiered-cache-poc -b codex/a-2086-cached-archives-poc \
+  -e ARCHIVE_POC_WORKLOAD=synthetic -y
 
 BUILDKITE_ORGANIZATION_SLUG=jamie-test bk build create \
   -p agent-tiered-cache-poc -b codex/a-2086-cached-archives-poc \
+  -e ARCHIVE_POC_WORKLOAD=synthetic \
   -e ARCHIVE_POC_REUSE_KEY=01a13d30-0c57-4a68-bf13-d13b1aa2af21 -y
 ```
 
 The example reuse key is from the runs below and will expire under the normal
 registry lifecycle. Use a fresh completed run's key for later experiments.
 
-## Results: 15 October 2026
+## Synthetic results: 15 October 2026
 
 [Build #2](https://buildkite.com/jamie-test/agent-tiered-cache-poc/builds/2)
 passed the complete experiment at `a83e059e82171e0feaea5a8e4693ba2047bd74bb`.
